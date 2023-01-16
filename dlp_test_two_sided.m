@@ -1,4 +1,4 @@
-function[up_est,low_est,Rho] = dlp_test_two_sided(varargin)
+function[L_c,R_c,Rho] = dlp_test_two_sided(varargin)
 
 % Setting some default options
 if nargin > 0
@@ -71,10 +71,6 @@ else
     ngc2_m = 0;
 end
 
-if c > acos(a)/abs(log(a)) || nimg_p + nimg1_p/abs(log(a)) >= 1 || nimg_m + nimg1_m/abs(log(a)) >= 1 || c*abs(log(a))*(ng_p+ngc_m) + nimg_m >= a^4 || c*abs(log(a))*(ng_m+ngc_p) + nimg_p >= a^4
-    warning('Conditions on c violated.')
-end
-
 % Derivatives of g_+ and g_-
 syms x;
 g1_p = matlabFunction(diff(g_p(x),x),'Vars',x);
@@ -101,28 +97,46 @@ kernel_sing_p = @(x) (1/(2*pi))*f2(a.^x)./(2+2*f1(a.^x).^2).*a.^x*lga;
 kernel_sing_m = @(x) (1/(2*pi))*f2(-a.^x)./(2+2*f1(-a.^x).^2).*a.^x*lga;
 
 % Fix t_k
-t = (0:m)*pi/m;
+t = ((1:m) - 1/2)*pi/m;
 
 % The estimates for \|\tilde{K}^{\pm}_t\|_{c,0},\|\tilde{L}^{\pm}_t\|_{c,0}
 % and \|\tilde{K}^{\pm}_t\|_{0,c}, \|\tilde{L}^{\pm}_t\|_{0,c},
-% respectively
-K_1_p = (1 + (ngc_p + ngc1_p/lga)^2)^(1/4)/(pi*(1 - (nimg_p + nimg1_p/lga)^2))*((ngc1_p + ngc2_p/lga)*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + (lga*(ngc_p + ng_p) + ngc1_p + ng1_p)*special_fun1(a));
-K_1_m = (1 + (ngc_m + ngc1_m/lga)^2)^(1/4)/(pi*(1 - (nimg_m + nimg1_m/lga)^2))*((ngc1_m + ngc2_m/lga)*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + (lga*(ngc_m + ng_m) + ngc1_m + ng1_m)*special_fun1(a));
-L_1_p = (2*pi)^(-1)*(ng_m*lga + ng1_m + a^(-2)*lga*max(ngc_p,ng_m))/(1 - a^(-8)*(c*lga*(ngc_p + ng_m) + nimg_p)^2)*(1 + (ngc_p + ngc1_p/lga)^2)^(1/4)*special_fun2(a);
-L_1_m = (2*pi)^(-1)*(ng_p*lga + ng1_p + a^(-2)*lga*max(ngc_m,ng_p))/(1 - a^(-8)*(c*lga*(ngc_m + ng_p) + nimg_m)^2)*(1 + (ngc_m + ngc1_m/lga)^2)^(1/4)*special_fun2(a);
-K_1 = [K_1_m L_1_m;L_1_p K_1_p];
-K_2_p = (1 + (ng_p + ng1_p/lga)^2)^(1/4)/(pi*(1 - (nimg_p + nimg1_p/lga)^2)^(5/4))*((ngc1_p + ngc2_p/lga)*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*(lga*ngc_p + ngc1_p)*special_fun1(a));
-K_2_m = (1 + (ng_m + ng1_m/lga)^2)^(1/4)/(pi*(1 - (nimg_m + nimg1_m/lga)^2)^(5/4))*((ngc1_m + ngc2_m/lga)*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*(lga*ngc_m + ngc1_m)*special_fun1(a));
-L_2_p = (2*pi)^(-1)*(ngc_m*lga + ngc1_m + a^(-2)*lga*max(ng_p,ngc_m))/(1 - a^(-8)*(c*lga*(ng_p + ngc_m) + nimg_m)^2)*(1 + (ng_p + ng1_p/lga)^2)^(1/4)/(1 - (nimg_m + nimg1_m/lga)^2)^(1/4)*special_fun2(a);
-L_2_m = (2*pi)^(-1)*(ngc_p*lga + ngc1_p + a^(-2)*lga*max(ng_m,ngc_p))/(1 - a^(-8)*(c*lga*(ng_m + ngc_p) + nimg_p)^2)*(1 + (ng_m + ng1_m/lga)^2)^(1/4)/(1 - (nimg_p + nimg1_p/lga)^2)^(1/4)*special_fun2(a);
-K_2 = [K_2_m L_2_m;L_2_p K_2_p];
+% respectively (Prop. 4.17)
+I_c_p = nimg_p + nimg1_p/lga;
+I_c_m = nimg_m + nimg1_m/lga;
+k_0 = max(ng_p,ng_m)*lga/a;
+k_c_p = max(ngc_p,ng_m)*lga/a;
+k_c_m = max(ngc_m,ng_p)*lga/a;
+F_0_p = ng_p + ng1_p/lga;
+F_0_m = ng_m + ng1_m/lga;
+F_c_p = ngc_p + ngc1_p/lga;
+F_c_m = ngc_m + ngc1_m/lga;
+G_0_p = ng1_p + ng2_p/lga;
+G_0_m = ng1_m + ng2_m/lga;
+G_c_p = ngc1_p + ngc2_p/lga;
+G_c_m = ngc1_m + ngc2_m/lga;
+if c > acos(a)/lga || I_c_p >= 1 || I_c_m >= 1 || nimg_p + a*c*k_c_p >= a^2 || nimg_m + a*c*k_c_m >= a^2
+    warning('Conditions on c violated.')
+end
+K_p = (1 + F_c_p^2)^(1/4)/(pi*(1 - I_c_p^2))*(G_c_p*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + lga*(F_c_p + F_0_p)*BStar10(a));
+K_m = (1 + F_c_m^2)^(1/4)/(pi*(1 - I_c_m^2))*(G_c_m*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + lga*(F_c_m + F_0_m)*BStar10(a));
+L_p = (2*pi)^(-1)*(lga*F_0_m + k_c_p)/(1 - a^(-4)*(nimg_p + a*c*k_c_p)^2)*(1 + F_c_p^2)^(1/4)*CStar10(a);
+L_m = (2*pi)^(-1)*(lga*F_0_p + k_c_m)/(1 - a^(-4)*(nimg_m + a*c*k_c_m)^2)*(1 + F_c_m^2)^(1/4)*CStar10(a);
+C_5 = [K_m L_m;L_p K_p];
+K_p = (1 + F_0_p^2)^(1/4)/(pi*(1 - I_c_p^2)^(5/4))*(G_c_p*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*lga*F_c_p*BStar10(a));
+K_m = (1 + F_0_m^2)^(1/4)/(pi*(1 - I_c_m^2)^(5/4))*(G_c_m*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*lga*F_c_m*BStar10(a));
+L_p = (2*pi)^(-1)*(lga*F_c_m + k_c_m)/(1 - a^(-4)*(nimg_m + a*c*k_c_m)^2)*(1 + F_0_p^2)^(1/4)/(1 - I_c_m^2)^(1/4)*CStar10(a);
+L_m = (2*pi)^(-1)*(lga*F_c_p + k_c_p)/(1 - a^(-4)*(nimg_p + a*c*k_c_p)^2)*(1 + F_0_m^2)^(1/4)/(1 - I_c_p^2)^(1/4)*CStar10(a);
+C_6 = [K_m L_m;L_p K_p];
+C_4 = 2*exp(2*pi*c)*norm(C_6*C_5,'inf'); % (4.70)
 
-% Estimates for \|\tilde{K}^{\pm}_t\|_{\infty} and \|\tilde{L}^{\pm}_t\|_{\infty}
-K_3_p = (1 + (ng_p + ng1_p/lga)^2)^(1/4)/pi*((ng1_p + ng2_p/lga)*(1 + a^(1/2) + a^(-1/2)/(4*a^2)) + 2*(lga*ng_p + ng1_p)*special_fun1(a));
-K_3_m = (1 + (ng_m + ng1_m/lga)^2)^(1/4)/pi*((ng1_m + ng2_m/lga)*(1 + a^(1/2) + a^(-1/2)/(4*a^2)) + 2*(lga*ng_m + ng1_m)*special_fun1(a));
-L_3_p = (2*pi)^(-1)*(ng_m*lga + ng1_m + a^(-2)*lga*max(ng_p,ng_m))*(1 + (ng_p + ng1_p/lga)^2)^(1/4)*special_fun2(a);
-L_3_m = (2*pi)^(-1)*(ng_p*lga + ng1_p + a^(-2)*lga*max(ng_m,ng_p))*(1 + (ng_m + ng1_m/lga)^2)^(1/4)*special_fun2(a);
-K_3 = [K_3_m L_3_m;L_3_p K_3_p];
+% Estimates for \|\tilde{K}^{\pm}_t\|_{\infty} and
+% \|\tilde{L}^{\pm}_t\|_{\infty} (see (4.69))
+K_p = (1 + F_0_p^2)^(1/4)/pi*(G_0_p*(1 + a^(1/2) + a^(-1/2)/(4*a^2)) + 2*lga*F_0_p*BStar10(a));
+K_m = (1 + F_0_m^2)^(1/4)/pi*(G_0_m*(1 + a^(1/2) + a^(-1/2)/(4*a^2)) + 2*lga*F_0_m*BStar10(a));
+L_p = (2*pi)^(-1)*(lga*F_0_m + k_0)*(1 + F_0_p^2)^(1/4)*CStar10(a);
+L_m = (2*pi)^(-1)*(lga*F_0_p + k_0)*(1 + F_0_m^2)^(1/4)*CStar10(a);
+C_3 = norm([K_m L_m;L_p K_p],'inf'); % (4.69)
 
 % Computation of B_{t_k,N}^M for k = 0,...,m. As the summands are
 % identical for all k except for the exp(ijt_k), we first compute the
@@ -156,32 +170,33 @@ Neg_L_m = kernel_L_m(X-J,Y)/N;
 Pos = [Pos_K_m Pos_L_m;Pos_L_p Pos_K_p];
 Neg = [Neg_K_m Neg_L_m;Neg_L_p Neg_K_p];
 
-% Estimates for the constants C_1(M) and C_2(M,N)
-C_1_p = (1 + (ng_p + ng1_p/lga)^2)^(1/4)*(2*(lga*ng_p + ng1_p)*special_fun1(a,M) + (ng_m*lga + ng1_m + a^(-2)*lga*max(ng_p,ng_m))*special_fun2(a,M)/2);
-C_1_m = (1 + (ng_m + ng1_m/lga)^2)^(1/4)*(2*(lga*ng_m + ng1_m)*special_fun1(a,M) + (ng_p*lga + ng1_p + a^(-2)*lga*max(ng_m,ng_p))*special_fun2(a,M)/2);
-C_1 = max(C_1_p,C_1_m)/pi;
+% Estimates for the constants C_1(M) and C_2 := \|B_N^M\|_{\infty} (see
+% (4.66) and (4.68))
+C_1_p = (1 + F_0_p^2)^(1/4)*(2*lga*F_0_p*log(tanh(abs((M-1)*log(a))/4))/(sqrt(a)*log(a)) + (lga*F_0_m + k_0)*2*atan(a^(M/2))/(a^2*abs(log(a))));
+C_1_m = (1 + F_0_m^2)^(1/4)*(2*lga*F_0_m*log(tanh(abs((M-1)*log(a))/4))/(sqrt(a)*log(a)) + (lga*F_0_p + k_0)*2*atan(a^(M/2))/(a^2*abs(log(a))));
+C_1 = max(C_1_p,C_1_m)/(2*pi);
 C_2 = norm(sum([J J;J J].*abs(Pos) + [J J;J J].*abs(Neg),3),'inf');
 
 % Summing the terms up
-rho = zeros(m+1,1);
-nu = zeros(m+1,2);
-nu_ = zeros(m,2);
+rho = zeros(m,1);
+nu = zeros(m,2);
+nu_ = zeros(m-1,2);
 progress = waitbar(0,'Progress');
-for k = 1:m+1
-    B = Z + sum(exp(1i*[J J;J J]*t(k)).*Pos + exp(-1i*[J J;J J]*t(k)).*Neg,3);
+for k = 1:m
+    A = Z + sum(exp(1i*[J J;J J]*t(k)).*Pos + exp(-1i*[J J;J J]*t(k)).*Neg,3);
 
 % Computing the spectral radii of B_{t_k,N}^M for k = 0,...,m
-    rho(k) = abs(eigs(B,1));
+    rho(k) = abs(eigs(A,1));
 
 % Computing the the smallest singular value of (B_{t_k,N}^M - \lambda_l I),
 % where \lambda_l is chosen adaptively
     phi = 0;
-    nu(k,1) = 1/norm(inv(B - rho_0*eye(2*N)),'inf');
+    nu(k,1) = 1/norm(inv(A - rho_0*eye(2*N)),'inf');
     l = 1;
     while phi < 2*pi
         phi = phi + nu(k,l)/(2*rho_0);
         lambda = rho_0*exp(1i*phi);
-        nu(k,l+1) = 1/norm(inv(B - lambda*eye(2*N)),'inf');
+        nu(k,l+1) = 1/norm(inv(A - lambda*eye(2*N)),'inf');
         nu_(k,l) = nu(k,l)/4 + nu(k,l+1)/2;
         l = l+1;
     end
@@ -196,19 +211,13 @@ if Rho >= rho_0
     warning('Spectral radius condition violated')
 end
 
-% Upper estimate for \|(\tilde{K}_t - \tilde{K}_{t,N})\tilde{K}_t\|_{\infty}
-% (Proposition 20)
-up_est = 2*exp(2*pi*c)*norm(K_2*K_1,'inf')/(exp(2*pi*c*N) - 1);
+% Computation of L_c and R_c in (4.43)
+L_c = C_4/(exp(2*pi*c*N) - 1);
+R = min(nu_(nu_>0));
+R_c = rho_0^2*(1 + C_3*(R - C_1 - C_2*pi/(2*m))^(-1))^(-1);
 
-% Lower estimate for the LHS in Theorem 23
-Nu = min(nu_(nu_>0));
-low_est = rho_0^2*(1 + norm(K_3,'inf')*(Nu - C_2*pi/(2*m) - C_1)^(-1))^(-1);
-
-% Warning if M,m or n are chosen too small and thus the lower estimate gets
+% Warning if M, m or n are chosen too small so that R_c is
 % negative
-if Nu < C_2*pi/(2*m)
-    warning('m is chosen too small')
-end
-if Nu < C_1
-    warning('M is chosen too small')
+if R_c < 0
+    warning('R_c is negative (N = %d)',N)
 end

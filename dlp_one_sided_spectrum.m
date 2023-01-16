@@ -47,7 +47,7 @@ kernel = @(x,y) (1/(2*pi))*(((a.^y-a.^x).*f1(a.^y) + f(a.^x) - f(a.^y))./((a.^x-
 kernel_sing = @(x) (1/(2*pi))*f2(a.^x)./(2+2*f1(a.^x)^2).*a.^x*lga;
 
 % Fix t_k
-t = (-m:m)*pi/m;
+t = ((1:m) - 1/2)*pi/m;
 
 % The 0-th term
 x = 1/(2*N):1/N:1-1/(2*N);
@@ -64,14 +64,21 @@ j = 1:M;
 Pos = kernel(X+J,Y)/N;
 Neg = kernel(X-J,Y)/N;
 
+% Summing the terms up and computing the eigenvalues
+progress = waitbar(0,'Progress');
+eigA = zeros(1,N*m);
+for k = 1:m
+    A = Z + sum(exp(1i*J*t(k)).*Pos + exp(-1i*J*t(k)).*Neg,3);
+    eigA((k-1)*N+1:k*N) = eig(A);
+    text = strcat('Progress:',32,'N',32,'=',32,sprintf('%1.0f',N),44,32,'k',32,'=',32,sprintf('%1.0f',k));
+    waitbar(k/m,progress,text)
+end
+delete(progress);
+
 % Preparing the plot
 figure
 hold on
 axis equal
-
-% Summing the terms up and computing the spectrum
-for k = 1:2*m+1
-    B = Z + sum(exp(1i*J*t(k)).*Pos + exp(-1i*J*t(k)).*Neg,3);
-    lambda = eig(B);
-    plot(real(lambda),imag(lambda),'.k')
-end
+plot(real(eigA),imag(eigA),'.k')
+plot(real(eigA),-imag(eigA),'.k')
+plot(0,0,'.k')

@@ -4,22 +4,22 @@ function[] = dlp_two_sided_spectrum(varargin)
 if nargin > 0
     N = varargin{1};
 else
-    N = 32;
+    N = 16;
 end
 if nargin > 1
     a = varargin{2}; % a := \alpha
 else
-    a = 3/4;
+    a = 7/8;
 end
 if nargin > 2
     m = varargin{3};
 else
-    m = 400;
+    m = 2000;
 end
 if nargin > 3
     M = varargin{4};
 else
-    M = 50;
+    M = 200;
 end
 if nargin > 4
     g_p = varargin{5};
@@ -55,7 +55,7 @@ kernel_sing_p = @(x) (1/(2*pi))*f2(a.^x)./(2+2*f1(a.^x).^2).*a.^x*lga;
 kernel_sing_m = @(x) (1/(2*pi))*f2(-a.^x)./(2+2*f1(-a.^x).^2).*a.^x*lga;
 
 % Fix t_k
-t = (-m:m)*pi/m;
+t = ((1:m) - 1/2)*pi/m;
 
 % The 0-th term
 x = 1/(2*N):1/N:1-1/(2*N);
@@ -85,14 +85,21 @@ Neg_L_m = kernel_L_m(X-J,Y)/N;
 Pos = [Pos_K_m Pos_L_m;Pos_L_p Pos_K_p];
 Neg = [Neg_K_m Neg_L_m;Neg_L_p Neg_K_p];
 
+% Summing the terms up and computing the eigenvalues
+progress = waitbar(0,'Progress');
+eigA = zeros(1,2*N*m);
+for k = 1:m
+    A = Z + sum(exp(1i*[J J;J J]*t(k)).*Pos + exp(-1i*[J J;J J]*t(k)).*Neg,3);
+    eigA((k-1)*2*N+1:k*2*N) = eig(A);
+    text = strcat('Progress:',32,'N',32,'=',32,sprintf('%1.0f',N),44,32,'k',32,'=',32,sprintf('%1.0f',k));
+    waitbar(k/m,progress,text)
+end
+delete(progress);
+
 % Preparing the plot
 figure
 hold on
 axis equal
-
-% Summing the terms up
-for k = 1:2*m+1
-    B = Z + sum(exp(1i*[J J;J J]*t(k)).*Pos + exp(-1i*[J J;J J]*t(k)).*Neg,3);
-    lambda = eig(B);
-    plot(real(lambda),imag(lambda),'.k')
-end
+plot(real(eigA),imag(eigA),'.k')
+plot(real(eigA),-imag(eigA),'.k')
+plot(0,0,'.k')

@@ -12,29 +12,50 @@ else
     a = 1/2;
 end
 if nargin > 2
-    t = varargin{3};
+    c = varargin{3};
+else
+    c = 0.03;
+end
+if nargin > 3
+    t = varargin{4};
 else
     t = 0;
 end
-if nargin > 3
-    p = varargin{4};
+if nargin > 4
+    p = varargin{5};
 else
     p = 10;
 end
-if nargin > 4
-    M = varargin{5};
+if nargin > 5
+    M = varargin{6};
 else
     M = 25;
 end
-if nargin > 5
-    g = varargin{6};
+if nargin > 6
+    n = varargin{7};
+else
+    n = 40;
+end
+if nargin > 7
+    g = varargin{8};
+    ng = varargin{9}; % sup norm of g
+    ng1 = varargin{10}; % sup norm of g'
+    ng2 = varargin{11}; % sup norm of g''
+    nimg = varargin{12}; % c norm of Im(g)
+    nimg1 = varargin{13}; % c norm of Im(g')
+    ngc = varargin{14}; % c norm of g
+    ngc1 = varargin{15}; % c norm of g'
+    ngc2 = varargin{16}; % c norm of g''
 else
     g = @(x) sin(pi*x).^2;
-end
-if nargin > 6
-    s = varargin{7};
-else
-    s = 40;
+    ng = 1;
+    ng1 = pi;
+    ng2 = 2*pi^2;
+    nimg = (1/2)*sinh(2*pi*c);
+    nimg1 = pi*sinh(2*pi*c);
+    ngc = cosh(pi*c)^2;
+    ngc1 = pi*cosh(2*pi*c);
+    ngc2 = 2*pi^2*cosh(2*pi*c);
 end
 
 % Derivatives of g
@@ -74,7 +95,7 @@ Neg = kernel(X-J,Y);
 % Summing up the kernel
 B = Z + sum(exp(1i*J*t).*Pos + exp(-1i*J*t).*Neg,3);
 
-% Computing T^{p,N}
+% Computing T^{p,N,M} (see 4.74)
 e = exp(2i*pi*x');
 T = zeros(2*p+1);
 for j = 1:2*p+1
@@ -83,16 +104,39 @@ for j = 1:2*p+1
     end
 end
 
+% Computing the largest eigenvector \lambda_l of
+% \Re(e^{i\theta_l}T^{p,N,M}) and a corresponding eigenvector x_l for l =
+% 1,...,n
+z = zeros(1,n+1);
+for l = 0:n
+    theta = pi*l/n;
+    [x,~] = eigs(exp(-1i*theta)*T+exp(1i*theta)*T',1,'largestreal');
+    z(l+1) = x'*T*x;
+end
+
+% The estimates for C_1, \|\tilde{K}_t\|_{c,0}, \|\tilde{K}_t\|_{0,c} and
+% C_7 (see (4.34), Prop. 4.8 and Cor. 4.24)
+I_c = nimg + nimg1/lga;
+F_0 = ng + ng1/lga;
+F_c = ngc + ngc1/lga;
+G_c = ngc1 + ngc2/lga;
+if c > acos(a)/lga || I_c >= 1
+    warning('Condition (4.21) violated.')
+end
+C_1 = (2*lga*F_0/pi)*(1 + F_0^2)^(1/4)*log(tanh(abs((M-1)*log(a))/4))/(sqrt(a)*log(a));
+C_5 = (1 + F_c^2)^(1/4)/(pi*(1 - I_c^2))*(G_c*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + lga*(F_c+F_0)*BStar10(a));
+C_6 = (1 + F_0^2)^(1/4)/(pi*(1 - I_c^2)^(5/4))*(G_c*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*lga*F_c*BStar10(a));
+C_7 = 2*(2*p+1)*exp(2*pi*p*c)*(C_5+C_6)/(exp(2*pi*c*N) - 1) + C_1;
+
+% A lower estimate for the numerical range (see Cor. 4.25)
+theta_max = max(diff(angle(z)));
+R_min = min(abs(z));
+RStar = R_min*cos(theta_max/2) - C_7;
+z = [z,fliplr(conj(z)),z(1)];
+
 % Preparing the plot
-figure
+%figure
 hold on
 axis equal
-
-% Computing the support lines of the numerical range
-absc = zeros(s,1);
-for j = 1:s
-    phi = 2*pi*j/s;
-    absc(j) = eigs(exp(-1i*phi)*T+exp(1i*phi)*T',1,'largestreal')/2;
-    line([cos(phi)*absc(j)+sin(phi),cos(phi)*absc(j)-sin(phi)],[sin(phi)*absc(j)-cos(phi),sin(phi)*absc(j)+cos(phi)],'Color','black')
-end
-max(abs(absc))
+plot(real(z),imag(z),'-k')
+plot(RStar*exp(2i*pi*(0:0.001:1)),'-b')
