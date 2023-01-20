@@ -93,26 +93,27 @@ Pos = kernel(X+J,Y);
 Neg = kernel(X-J,Y);
 
 % Summing up the kernel
-B = Z + sum(exp(1i*J*t).*Pos + exp(-1i*J*t).*Neg,3);
+A = Z + sum(exp(1i*J*t).*Pos + exp(-1i*J*t).*Neg,3);
 
-% Computing T^{p,N,M} (see 4.74)
+% Computing T^{p,t,N,M} (see 4.74)
 e = exp(2i*pi*x');
 T = zeros(2*p+1);
 for j = 1:2*p+1
     for k = 1:2*p+1
-        T(j,k) = (e').^(j-p-1)*B*e.^(k-p-1)/(N^2);
+        T(j,k) = (e').^(j-p-1)*A*e.^(k-p-1)/(N^2);
     end
 end
 
 % Computing the largest eigenvector \lambda_l of
-% \Re(e^{i\theta_l}T^{p,N,M}) and a corresponding eigenvector x_l for l =
-% 1,...,n
+% \Re(e^{-i\theta_l}T^{p,t,N,M}) and a corresponding eigenvector x_l for
+% l = 1,...,n in order to get the points z_l
 z = zeros(1,n+1);
-for l = 0:n
-    theta = pi*l/n;
+for l = 0:n-1
+    theta = 2*pi*l/n;
     [x,~] = eigs(exp(-1i*theta)*T+exp(1i*theta)*T',1,'largestreal');
     z(l+1) = x'*T*x;
 end
+z(n+1) = z(1);
 
 % The estimates for C_1, \|\tilde{K}_t\|_{c,0}, \|\tilde{K}_t\|_{0,c} and
 % C_7 (see (4.34), Prop. 4.8 and Cor. 4.24)
@@ -126,16 +127,15 @@ end
 C_1 = (2*lga*F_0/pi)*(1 + F_0^2)^(1/4)*log(tanh(abs((M-1)*log(a))/4))/(sqrt(a)*log(a));
 C_5 = (1 + F_c^2)^(1/4)/(pi*(1 - I_c^2))*(G_c*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + lga*(F_c+F_0)*BStar10(a));
 C_6 = (1 + F_0^2)^(1/4)/(pi*(1 - I_c^2)^(5/4))*(G_c*(1 + a^(1/2) + a^(-1/2))/(4*a^2) + 2*lga*F_c*BStar10(a));
-C_7 = 2*(2*p+1)*exp(2*pi*p*c)*(C_5+C_6)/(exp(2*pi*c*N) - 1) + C_1;
+C_7 = 2*(2*p+1)*exp(pi*(2*p+1)*c)*(C_5+C_6)/(exp(2*pi*c*N) - 1) + C_1;
 
 % A lower estimate for the numerical range (see Cor. 4.25)
 theta_max = max(diff(angle(z)));
 R_min = min(abs(z));
 RStar = R_min*cos(theta_max/2) - C_7;
-z = [z,fliplr(conj(z)),z(1)];
 
 % Preparing the plot
-%figure
+% figure
 hold on
 axis equal
 plot(real(z),imag(z),'-k')

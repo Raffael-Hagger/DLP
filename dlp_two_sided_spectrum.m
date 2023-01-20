@@ -97,7 +97,7 @@ end
 delete(progress);
 
 % Preparing the plot
-figure
+%figure
 hold on
 axis equal
 plot(real(eigA),imag(eigA),'.k')

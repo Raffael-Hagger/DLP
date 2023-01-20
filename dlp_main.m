@@ -1,27 +1,27 @@
 function[] = dlp_main
 
 % Choosing different options to compute
-estimates = 1;
+estimates = 0;
 spectrum = 0;
-nrange = 0;
-sides = 1; % set to 1 for the one-sided case, 2 for two-sided case
+nrange = 1;
+sides = 2; % set to 1 for the one-sided case, 2 for two-sided case
 
 % Fixing the parameters, functions and norms
 if sides == 1
     % General parameters
-    a = 1/2;
-    m = 400;
-    M = 25;
+    a = 3/4;
+    m = 16000;
+    M = 100;
 
     % Only needed for estimates
-    c = 0.03;
+    c = 0.013;
     rho_0 = 1/2;
 
     % Only needed for spectrum and numerical range
-    N = 256;
+    N = 512;
 
     % Only needed for numerical range
-    t = pi/8;
+    t = pi/18;
     p = 10;
     n = 100;
 
@@ -49,7 +49,7 @@ elseif sides == 2
     N = 256;
 
     % Only needed for numerical range
-    t = pi/8;
+    t = pi/13;
     p = 10;
     n = 100;
     
@@ -102,7 +102,7 @@ if estimates == 1
     ax = gca;
     ax.YAxis(1).Color = 'k';
     ax.YAxis(2).Color = 'r';
-    xlabel('N')
+    xlabel('$N$','Interpreter','latex')
     xticks(x)
     L = legend('$\mathcal{L}_c(f,N)$','$\mathcal{R}_c(f,m,M,N)$','$r_{\max}^N$','Interpreter', 'latex');
     L.FontSize = 12;
